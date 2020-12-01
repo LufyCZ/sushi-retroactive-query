@@ -21,7 +21,7 @@ async function pendingBalance(address: string, poolId: number, startBlock: numbe
 }
 
 export async function pendingBalances(addresses: {address: string, poolId: string}[], startBlock: number, endBlock: number) {
-    let output: any = [];
+    let pendingList: {address: string, pendingBeginning: bigint, pendingEnd: bigint}[] = [];
 
     // To avoid asking for a pending balance on a yet non-existing pool
     const poolLengthStart = Number(await masterchef.methods.poolLength().call(startBlock));
@@ -31,19 +31,19 @@ export async function pendingBalances(addresses: {address: string, poolId: strin
         const [pendingBeginning, pendingEnd] = await pendingBalance(addresses[i].address, Number(addresses[i].poolId), startBlock, endBlock, poolLengthStart, poolLengthEnd);
 
         let flag = false;
-        for(let j in output) {
-            if(addresses[i].address === output[j].address) {
-                output[j].pendingBeginning += pendingBeginning;
-                output[j].pendingEnd += pendingEnd;
+        for(let j in pendingList) {
+            if(addresses[i].address === pendingList[j].address) {
+                pendingList[j].pendingBeginning += pendingBeginning;
+                pendingList[j].pendingEnd += pendingEnd;
                 flag = true;
                 break;
             }
         }
 
-        if(!flag) { output.push({address: addresses[i].address, pendingBeginning, pendingEnd}); }
+        if(!flag) { pendingList.push({address: addresses[i].address, pendingBeginning, pendingEnd}); }
     };
     
-    output = output.map((entry) => ({
+    let output: {address:string, pendingBeginning: string, pendingEnd:string }[] = pendingList.map((entry) => ({
         address: entry.address,
         pendingBeginning: String(entry.pendingBeginning),
         pendingEnd: String(entry.pendingEnd)
@@ -52,7 +52,7 @@ export async function pendingBalances(addresses: {address: string, poolId: strin
     const filename = './output/pending-' + startBlock + '-' + endBlock + '.json';
     fs.writeFileSync(filename, JSON.stringify(output, null, 2));
 
-    return output;
+    return pendingList;
 }
 
 // 29 is the vesting pool id, the address is the multisig who owns the DUMMY token in the pool
@@ -71,14 +71,13 @@ export async function pendingVesting(startBlock: number, endBlock: number) {
             "0x000000000000000000000000e94B5EEC1fA96CEecbD33EF5Baa8d00E4493F4f3"
         ]
     })
-
+    
     logs.forEach(entry => {
         vestedEnd += BigInt(entry.data)
     });
-    
     // Multisig #2
 
-    vestedBeginning += BigInt(await masterchef.methods.pendingSushi(29, "0x19B3Eb3Af5D93b77a5619b047De0EED7115A19e7").call(10993700))
+    vestedBeginning += BigInt(await masterchef.methods.pendingSushi(29, "0x19B3Eb3Af5D93b77a5619b047De0EED7115A19e7").call(startBlock))
     vestedEnd += BigInt(await masterchef.methods.pendingSushi(29, "0x19B3Eb3Af5D93b77a5619b047De0EED7115A19e7").call(endBlock))
 
     logs = await web3.eth.getPastLogs({

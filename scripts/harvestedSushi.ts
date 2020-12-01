@@ -62,7 +62,7 @@ function parseLogs(logs) {
             }
         }
 
-        if(!flag) { output.push({address: logs[i].address, harvested: logs[i].harvested }) }
+        if(!flag && (logs[i].address !== "0x19B3Eb3Af5D93b77a5619b047De0EED7115A19e7" || logs[i].address !== "0xe94B5EEC1fA96CEecbD33EF5Baa8d00E4493F4f3")) { output.push({address: logs[i].address, harvested: logs[i].harvested }) }
     }
 
     return output;
