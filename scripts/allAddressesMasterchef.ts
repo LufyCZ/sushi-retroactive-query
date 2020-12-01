@@ -21,6 +21,10 @@ export async function fetchAddresses(endBlock: number) {
     
     logs = _.uniqWith(logs, _.isEqual);
 
+    logs = logs.filter((entry) => {
+        if(entry.poolId !== 29) { return true; }
+    });
+
     const filename = './output/addresses-' + endBlock + '.json';
     fs.writeFileSync(filename, JSON.stringify(logs, null, 2));
 
