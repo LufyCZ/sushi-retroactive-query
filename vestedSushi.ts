@@ -1,4 +1,4 @@
-import { program } from 'commander';
+import { outputHelp, program } from 'commander';
 
 import { fetchAddresses } from './scripts/allAddressesMasterchef'
 import { harvestedSushi } from './scripts/harvestedSushi';
@@ -60,13 +60,8 @@ async function main() {
 
     let distribution = await calculateDistribution(totalList);
 
-    let output = distribution.map((entry) => ({
-        address: entry.address,
-        vestedSushi: String(entry.vestedSushi),
-    }))
-
     const filename = './output/vestedSushi-' + startBlock + '-' + endBlock + '.json';
-    fs.writeFileSync(filename, JSON.stringify(output, null, 2));
+    fs.writeFileSync(filename, JSON.stringify(distribution, null, 2));
 
     process.exit();
 }
@@ -80,10 +75,13 @@ async function calculateDistribution(list: {address: string, sushi: bigint}[]) {
 
     let fraction = ((BigInt(1000000) * sushiToDistribute) / totalSushiFarmed);
 
-    return list.map((entry) => ({
-        address: entry.address,
-        vestedSushi: (entry.sushi * fraction) / BigInt(1000000),
-    }));
+    let output = {};
+    
+    list.forEach((entry) => {
+        output[entry.address] = String((entry.sushi * fraction) / BigInt(1000000))
+    });
+
+    return output;
 }
 
 main()
