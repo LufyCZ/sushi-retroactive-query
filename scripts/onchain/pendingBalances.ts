@@ -49,7 +49,7 @@ export async function pendingBalances(addresses: {address: string, poolId: strin
         pendingEnd: String(entry.pendingEnd)
     }));
 
-    const filename = './output/pending-' + startBlock + '-' + endBlock + '.json';
+    const filename = '/output/pending-' + startBlock + '-' + endBlock + '.json';
     fs.writeFileSync(filename, JSON.stringify(output, null, 2));
 
     return pendingList;
