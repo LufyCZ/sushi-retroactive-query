@@ -13,6 +13,9 @@ const transferTopic = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4
 
 const masterchef = new web3.eth.Contract(masterchefAbi, masterchefAddress);
 
+type AddressList = {address: string, poolId: string}[];
+type PendingList = {address: string, pendingBeginning: bigint, pendingEnd: bigint}[];
+
 async function pendingBalance(address: string, poolId: number, startBlock: number, endBlock: number, poolLengthStart: number, poolLengthEnd: number) {
     let pendingBeginning = poolId < poolLengthStart ? BigInt(await masterchef.methods.pendingSushi(poolId, address).call(startBlock)) : BigInt(0);
     let pendingEnd = poolId < poolLengthEnd ? BigInt(await masterchef.methods.pendingSushi(poolId, address).call(endBlock)) : BigInt(0);
@@ -20,19 +23,19 @@ async function pendingBalance(address: string, poolId: number, startBlock: numbe
     return [pendingBeginning, pendingEnd];
 }
 
-export async function pendingBalances(addresses: {address: string, poolId: string}[], startBlock: number, endBlock: number) {
-    let pendingList: {address: string, pendingBeginning: bigint, pendingEnd: bigint}[] = [];
+export async function pendingBalances(addressList: AddressList, startBlock: number, endBlock: number) {
+    let pendingList: PendingList = [];
 
     // To avoid asking for a pending balance on a yet non-existing pool
     const poolLengthStart = Number(await masterchef.methods.poolLength().call(startBlock));
     const poolLengthEnd = Number(await masterchef.methods.poolLength().call(endBlock));
 
-    for(let i in addresses) {
-        const [pendingBeginning, pendingEnd] = await pendingBalance(addresses[i].address, Number(addresses[i].poolId), startBlock, endBlock, poolLengthStart, poolLengthEnd);
+    for(let i = 0; i < addressList.length; i++) {
+        const [pendingBeginning, pendingEnd] = await pendingBalance(addressList[i].address, Number(addressList[i].poolId), startBlock, endBlock, poolLengthStart, poolLengthEnd);
 
         let flag = false;
-        for(let j in pendingList) {
-            if(addresses[i].address === pendingList[j].address) {
+        for(let j = 0; j < pendingList.length; j++) {
+            if(addressList[i].address === pendingList[j].address) {
                 pendingList[j].pendingBeginning += pendingBeginning;
                 pendingList[j].pendingEnd += pendingEnd;
                 flag = true;
@@ -40,60 +43,45 @@ export async function pendingBalances(addresses: {address: string, poolId: strin
             }
         }
 
-        if(!flag) { pendingList.push({address: addresses[i].address, pendingBeginning, pendingEnd}); }
+        if(!flag && pendingBeginning !== 0n && pendingEnd !== 0n) { pendingList.push({address: addressList[i].address, pendingBeginning, pendingEnd}); }
     };
     
-    let output: {address:string, pendingBeginning: string, pendingEnd:string }[] = pendingList.map((entry) => ({
+    let pendingListString: {address:string, pendingBeginning: string, pendingEnd:string }[] = pendingList.map((entry) => ({
         address: entry.address,
         pendingBeginning: String(entry.pendingBeginning),
         pendingEnd: String(entry.pendingEnd)
     }));
 
-    const filename = '/output/pending-' + startBlock + '-' + endBlock + '.json';
-    fs.writeFileSync(filename, JSON.stringify(output, null, 2));
+    const filename = './output/pending-' + startBlock + '-' + endBlock + '.json';
+    fs.writeFileSync(filename, JSON.stringify(pendingListString, null, 2));
 
     return pendingList;
 }
 
-// 29 is the vesting pool id, the address is the multisig who owns the DUMMY token in the pool
+// 29 is the vesting pool id, the addresses are the multisigs who owned/owns the DUMMY token in the pool
 export async function pendingVesting(startBlock: number, endBlock: number) {
-    // Multisig #1
-    let vestedBeginning = BigInt(await masterchef.methods.pendingSushi(29, "0xe94B5EEC1fA96CEecbD33EF5Baa8d00E4493F4f3").call(startBlock))
-    let vestedEnd = BigInt(await masterchef.methods.pendingSushi(29, "0xe94B5EEC1fA96CEecbD33EF5Baa8d00E4493F4f3").call(endBlock))
-    
-    let logs = await web3.eth.getPastLogs({
-        fromBlock: startBlock,
-        toBlock: endBlock,
-        address: sushiToken,
-        topics: [
-            transferTopic,
-            masterchefTopic,
-            "0x000000000000000000000000e94B5EEC1fA96CEecbD33EF5Baa8d00E4493F4f3"
-        ]
-    })
-    
-    logs.forEach(entry => {
-        vestedEnd += BigInt(entry.data)
-    });
-    // Multisig #2
+    const multisigs = ["0xe94B5EEC1fA96CEecbD33EF5Baa8d00E4493F4f3", "0x19B3Eb3Af5D93b77a5619b047De0EED7115A19e7"];
 
-    vestedBeginning += BigInt(await masterchef.methods.pendingSushi(29, "0x19B3Eb3Af5D93b77a5619b047De0EED7115A19e7").call(startBlock))
-    vestedEnd += BigInt(await masterchef.methods.pendingSushi(29, "0x19B3Eb3Af5D93b77a5619b047De0EED7115A19e7").call(endBlock))
+    let vestedBeginning = 0n;
+    let vestedEnd = 0n;
 
-    logs = await web3.eth.getPastLogs({
-        fromBlock: startBlock,
-        toBlock: endBlock,
-        address: sushiToken,
-        topics: [
-            transferTopic,
-            masterchefTopic,
-            "0x00000000000000000000000019B3Eb3Af5D93b77a5619b047De0EED7115A19e7"
-        ]
-    })
+    for(let i in multisigs) {
+        vestedBeginning += BigInt(await masterchef.methods.pendingSushi(29, multisigs[i]).call(startBlock));
+        vestedEnd += BigInt(await masterchef.methods.pendingSushi(29, multisigs[i]).call(endBlock));
 
-    logs.forEach(entry => {
-        vestedEnd += BigInt(entry.data)
-    });
+        (await web3.eth.getPastLogs({
+            fromBlock: startBlock,
+            toBlock: endBlock,
+            address: sushiToken,
+            topics: [
+                transferTopic,
+                masterchefTopic,
+                "0x000000000000000000000000" + multisigs[i].split("x")[1]
+            ]
+        })).forEach(entry => {
+          vestedEnd += BigInt(entry.data)  
+        });
+    }
 
     return vestedEnd - vestedBeginning;
 }
