@@ -22,7 +22,8 @@ export async function fetchAddresses(endBlock: number) {
     logs = _.uniqWith(logs, _.isEqual);
 
     logs = logs.filter((entry) => {
-        if(entry.poolId !== 29 || entry.poolId !== 45) { return true; }
+        if(entry.poolId === 29 || entry.poolId === 45) { return false;}
+        return true;
     });
 
     const filename = './chain-cache/addresses-' + endBlock + '.json';
