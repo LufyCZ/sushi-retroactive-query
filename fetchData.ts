@@ -20,7 +20,7 @@ const source: string = program.chain ? 'onchain' : 'subgraph';
 async function main() {
     let distribution = source === 'onchain' ? await vestedSushiOnchain(startBlock, endBlock) : await vestedSushiSubgraph(startBlock, endBlock);
 
-    const filename = './output/vestedSushi/' + source + '-' + startBlock + '-' + endBlock + '.json';
+    const filename = './output/' + source + '-' + startBlock + '-' + endBlock + '.json';
     fs.writeFileSync(filename, JSON.stringify(distribution, null, 2));
 
     process.exit();

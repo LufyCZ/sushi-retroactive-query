@@ -52,7 +52,7 @@ export async function pendingBalances(addressList: AddressList, startBlock: numb
         pendingEnd: String(entry.pendingEnd)
     }));
 
-    const filename = './output/pending-' + startBlock + '-' + endBlock + '.json';
+    const filename = './chain-cache/pending-' + startBlock + '-' + endBlock + '.json';
     fs.writeFileSync(filename, JSON.stringify(pendingListString, null, 2));
 
     return pendingList;

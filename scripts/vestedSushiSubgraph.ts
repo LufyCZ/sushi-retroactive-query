@@ -17,7 +17,6 @@ type Users = {id: string, address: string, amount: bigint, rewardDebt: bigint, s
 type TotalList = {address: string, total: bigint}[];
 
 
-
 export default async function vestedSushiSubgraph(startBlock: number, endBlock: number) {
     const [totalAllocPointBeginning, totalAllocPointEnd] = await fetchTotalAllocPoint(startBlock, endBlock);
     const [poolsBeginning, poolsEnd] = await fetchPools(startBlock, endBlock);
@@ -28,13 +27,7 @@ export default async function vestedSushiSubgraph(startBlock: number, endBlock: 
 
     const totalList = getTotalList(totalListBeginning, totalListEnd);
 
-    // console.log(await masterchef.methods.pendingSushi(4, "0x8867ef1593f6a72dbbb941d4d96b746a4da691b2").call(startBlock));
-    // let user = usersBeginning.filter((entry) => entry.address === "0x8867ef1593f6a72dbbb941d4d96b746a4da691b2" ? true : false)[0]
-    // console.log(pendingSushi(startBlock, totalAllocPointBeginning, poolsBeginning, user))
-
-    getDistribution(totalList)
-
-    process.exit()
+    return getDistribution(totalList);
 }
 
 // Pretty much replicates the function from MasterChef
@@ -86,27 +79,10 @@ function getDistribution(totalList: TotalList) {
 
     // Multiplying to increase precision
     const fraction = (BigInt(1e18) * totalVested) / totalFarmed;
-    console.log(totalVested, "vested")
-    console.log(totalFarmed, "farmed")
-    console.log(fraction, "fraction")
+
     return totalList
             .filter(entry => entry.address === "0xe94b5eec1fa96ceecbd33ef5baa8d00e4493f4f3" ? false : entry.address === "0x19b3eb3af5d93b77a5619b047de0eed7115a19e7" ? false : true)
             .map(entry => ({
                 [entry.address]: String((entry.total * fraction) / BigInt(1e18))
             }));
 }
-
-
-
-
-
-
-
-
-
-
-
-async function test(block, pools: Pools, user: User, totalAllocPoint: bigint) {
-    console.log(pools[9]) // fetched from subgraph
-    console.log(await masterchef.methods.poolInfo(9).call(block))
-}   

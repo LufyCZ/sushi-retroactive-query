@@ -19,7 +19,7 @@ export async function harvestedSushi(startBlock: number, endBlock: number) {
         harvested: String(entry.harvested),
     }));
 
-    const filename = './output/harvested-' + startBlock + '-' + endBlock + '.json';
+    const filename = './chain-cache/harvested-' + startBlock + '-' + endBlock + '.json';
     fs.writeFileSync(filename, JSON.stringify(output, null, 2));
 
     return harvestedList;

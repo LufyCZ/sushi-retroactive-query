@@ -12,13 +12,13 @@ type TotalList = {address: string, sushi: bigint}[];
 export default async function vestedSushiOnchain(startBlock: number, endBlock: number) {
     let addressList: AddressList | undefined = undefined;
     try { 
-        const filename = './output/addresses-' + endBlock + '.json';
+        const filename = './chain-cache/addresses-' + endBlock + '.json';
         addressList = JSON.parse(fs.readFileSync(filename))
     } catch {}
 
     let pendingBalanceList: PendingBalanceList | undefined = undefined;
     try {
-        const filename = './output/pending-' + startBlock + '-' + endBlock + '.json';
+        const filename = './chain-cache/pending-' + startBlock + '-' + endBlock + '.json';
         pendingBalanceList = JSON.parse(fs.readFileSync(filename));
         pendingBalanceList = pendingBalanceList!.map((entry) => ({
             address: entry.address, 
@@ -29,7 +29,7 @@ export default async function vestedSushiOnchain(startBlock: number, endBlock: n
 
     let harvestedList: HarvestedList | undefined = undefined;
     try {
-        const filename = './output/harvested-' + startBlock + '-' + endBlock + '.json';
+        const filename = './chain-cache/harvested-' + startBlock + '-' + endBlock + '.json';
         harvestedList = JSON.parse(fs.readFileSync(filename));
         harvestedList = harvestedList!.map((entry) => ({
             address: entry.address,
@@ -72,9 +72,6 @@ async function calculateDistribution(list: {address: string, sushi: bigint}[], s
 
     // Multiplying to increase precision
     const fraction = ((BigInt(1e18) * totalVested) / totalFarmed);
-    console.log(totalVested, "vested")
-    console.log(totalFarmed, "farmed")
-    console.log(fraction, "fraction")
     let output = {};
     
     list.forEach((entry) => {

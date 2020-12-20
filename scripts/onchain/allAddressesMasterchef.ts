@@ -25,7 +25,7 @@ export async function fetchAddresses(endBlock: number) {
         if(entry.poolId !== 29 || entry.poolId !== 45) { return true; }
     });
 
-    const filename = './output/addresses-' + endBlock + '.json';
+    const filename = './chain-cache/addresses-' + endBlock + '.json';
     fs.writeFileSync(filename, JSON.stringify(logs, null, 2));
 
     return logs;
