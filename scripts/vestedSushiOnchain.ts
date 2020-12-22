@@ -4,21 +4,23 @@ import { pendingBalances, pendingVesting } from './onchain/pendingBalances'
 
 const fs = require('fs');
 
+type Options = {startBlock: number, endBlock: number, limit: bigint, fee: bigint};
+
 type AddressList = {address: string, poolId: string}[];
 type PendingBalanceList = {address: string, pendingBeginning: bigint, pendingEnd: bigint}[];
 type HarvestedList = {address: string, harvested: bigint}[];
 type TotalList = {address: string, sushi: bigint}[];
 
-export default async function vestedSushiOnchain(startBlock: number, endBlock: number) {
+export default async function vestedSushiOnchain(options: Options) {
     let addressList: AddressList | undefined = undefined;
     try { 
-        const filename = './chain-cache/addresses-' + endBlock + '.json';
+        const filename = './chain-cache/addresses-' + options.endBlock + '.json';
         addressList = JSON.parse(fs.readFileSync(filename))
     } catch {}
 
     let pendingBalanceList: PendingBalanceList | undefined = undefined;
     try {
-        const filename = './chain-cache/pending-' + startBlock + '-' + endBlock + '.json';
+        const filename = './chain-cache/pending-' + options.startBlock + '-' + options.endBlock + '.json';
         pendingBalanceList = JSON.parse(fs.readFileSync(filename));
         pendingBalanceList = pendingBalanceList!.map((entry) => ({
             address: entry.address, 
@@ -29,7 +31,7 @@ export default async function vestedSushiOnchain(startBlock: number, endBlock: n
 
     let harvestedList: HarvestedList | undefined = undefined;
     try {
-        const filename = './chain-cache/harvested-' + startBlock + '-' + endBlock + '.json';
+        const filename = './chain-cache/harvested-' + options.startBlock + '-' + options.endBlock + '.json';
         harvestedList = JSON.parse(fs.readFileSync(filename));
         harvestedList = harvestedList!.map((entry) => ({
             address: entry.address,
@@ -37,9 +39,9 @@ export default async function vestedSushiOnchain(startBlock: number, endBlock: n
         }))
     } catch {}
 
-    addressList = addressList ? addressList : await fetchAddresses(endBlock); console.log("AddressList Done")
-    pendingBalanceList = pendingBalanceList ? pendingBalanceList : await pendingBalances(addressList!, startBlock, endBlock); console.log("PendingBalanceList Done")
-    harvestedList = harvestedList ? harvestedList : await harvestedSushi(startBlock, endBlock); console.log("HarvestedList Done")
+    addressList = addressList ? addressList : await fetchAddresses(options.endBlock); console.log("AddressList Done")
+    pendingBalanceList = pendingBalanceList ? pendingBalanceList : await pendingBalances(addressList!, options.startBlock, options.endBlock); console.log("PendingBalanceList Done")
+    harvestedList = harvestedList ? harvestedList : await harvestedSushi(options.startBlock, options.endBlock); console.log("HarvestedList Done")
 
     let totalList: TotalList = [];
     pendingBalanceList.forEach((pendingEntry) => {
@@ -58,25 +60,25 @@ export default async function vestedSushiOnchain(startBlock: number, endBlock: n
         }
     })
 
-    let distribution = await calculateDistribution(totalList, startBlock, endBlock);
+    let distribution = await calculateDistribution(totalList, options);
 
     return distribution;
 }
 
-async function calculateDistribution(list: {address: string, sushi: bigint}[], startBlock: number, endBlock: number) {
-    const totalVested = await pendingVesting(startBlock, endBlock);
-    let totalFarmed: bigint = BigInt(0);
-    list.forEach((entry) => {
+async function calculateDistribution(totalList: TotalList, options: Options) {
+    const totalVested = (await pendingVesting(options.startBlock, options.endBlock)) - options.fee;
+    
+    let totalFarmed: bigint = 0n;
+    totalList.forEach((entry) => {
         totalFarmed += entry.sushi;
     });
 
     // Multiplying to increase precision
     const fraction = ((BigInt(1e18) * totalVested) / totalFarmed);
-    let output = {};
-    
-    list.forEach((entry) => {
-        output[entry.address] = String((entry.sushi * fraction) / BigInt(1e18))
-    });
 
-    return output;
+    return totalList
+            .filter(entry => entry.sushi > options.limit)
+            .map(entry => ({
+                [entry.address]: String((entry.sushi * fraction) / BigInt(1e18))
+            }))
 }
