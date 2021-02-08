@@ -1,6 +1,6 @@
 import { fetchTotalAllocPoint, fetchPools, fetchUsers } from './subgraph/fetchFromSubgraph'
 
-type Options = {startBlock: number, endBlock: number, limit: bigint, fee: bigint};
+type Options = {startBlock: number, endBlock: number, upperLimit: bigint, lowerLimit: bigint, fee: bigint};
 
 type Pools = {id: number, allocPoint: bigint, lastRewardBlock: number, accSushiPerShare: bigint, slpBalance: bigint, sushiHarvested: bigint}[];
 
@@ -20,6 +20,11 @@ export default async function vestedSushiSubgraph(options: Options) {
 
     const totalList = getTotalList(totalListBeginning, totalListEnd);
 
+    let i = 0n; 
+    getDistribution(totalList, options).forEach(e => {i+= BigInt(Object.values(e)[0])
+        if(BigInt(Object.values(e)[0]) < options.lowerLimit) {console.log("wut")}
+    } )
+    console.log(Number(i) / 1e18, Number((i*BigInt(1e18)) / (41751307685593021162748032n)) / 1e18 * 100 + "%")
     return getDistribution(totalList, options);
 }
 
@@ -74,9 +79,14 @@ function getDistribution(totalList: TotalList, options: Options) {
 
     // Multiplying to increase precision
     const fraction = (BigInt(1e18) * totalVested) / totalFarmed;
+
+    console.log(totalVested, "Total vested");
+    console.log(totalFarmed, "Total farmed");
+    console.log(fraction, "Fraction");
+
     return totalList
             .filter(entry => entry.address === "0xe94b5eec1fa96ceecbd33ef5baa8d00e4493f4f3" ? false : entry.address === "0x19b3eb3af5d93b77a5619b047de0eed7115a19e7" ? false : true)
-            .filter(entry => entry.total > options.limit)
+            .filter(entry => (entry.total > options.lowerLimit && (options.upperLimit !== 0n ? entry.total < options.upperLimit : true)))
             .map(entry => ({
                 [entry.address]: String((entry.total * fraction) / BigInt(1e18))
             }));

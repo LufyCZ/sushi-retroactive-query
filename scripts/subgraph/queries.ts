@@ -1,7 +1,9 @@
 import pageResults from 'graph-results-pager';
 
 const graphAPIEndpoints = {
-    masterchef: 'https://api.thegraph.com/subgraphs/name/sushiswap/master-chef',
+	masterchef: 'https://api.thegraph.com/subgraphs/name/lufycz/masterchef-vesting',
+
+    //masterchef: 'https://api.thegraph.com/subgraphs/name/sushiswap/master-chef',
 	blocklytics: 'https://api.thegraph.com/subgraphs/name/blocklytics/ethereum-blocks'
 };
 

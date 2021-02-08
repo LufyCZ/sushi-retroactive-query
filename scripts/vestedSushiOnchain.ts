@@ -4,7 +4,7 @@ import { pendingBalances, pendingVesting } from './onchain/pendingBalances'
 
 const fs = require('fs');
 
-type Options = {startBlock: number, endBlock: number, limit: bigint, fee: bigint};
+type Options = {startBlock: number, endBlock: number, upperLimit:bigint, lowerLimit: bigint, fee: bigint};
 
 type AddressList = {address: string, poolId: string}[];
 type PendingBalanceList = {address: string, pendingBeginning: bigint, pendingEnd: bigint}[];
@@ -77,7 +77,7 @@ async function calculateDistribution(totalList: TotalList, options: Options) {
     const fraction = ((BigInt(1e18) * totalVested) / totalFarmed);
 
     return totalList
-            .filter(entry => entry.sushi > options.limit)
+            .filter(entry => entry.sushi > options.lowerLimit)
             .map(entry => ({
                 [entry.address]: String((entry.sushi * fraction) / BigInt(1e18))
             }))
