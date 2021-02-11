@@ -1,7 +1,7 @@
 import masterchef from "./queries";
 
 type Pools = {id: number, allocPoint: bigint, lastRewardBlock: number, accSushiPerShare: bigint, slpBalance: bigint, sushiHarvested: bigint}[];
-type Users = {id: string, address: string, amount: bigint, rewardDebt: bigint, sushiHarvested: bigint}[];
+type Users = {poolId: number, address: string, amount: bigint, rewardDebt: bigint, sushiHarvested: bigint}[];
 
 export async function fetchTotalAllocPoint(startBlock: number, endBlock: number) {
     const totalAllocPointBeginning: bigint = BigInt((await masterchef.info(startBlock)).totalAllocPoint);

@@ -2,7 +2,7 @@ const Web3 = require('web3');
 const fs = require('fs');
 var _ = require('lodash');
 
-let web3 = new Web3(process.env.NODE);
+let web3 = new Web3(/*process.env.NODE*/);
 
 const masterchef = "0xc2EdaD668740f1aA35E4D8f227fB8E17dcA888Cd";
 const masterchefCreated = 10736242; // masterchef deployed

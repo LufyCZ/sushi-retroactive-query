@@ -7,6 +7,14 @@ const graphAPIEndpoints = {
 	blocklytics: 'https://api.thegraph.com/subgraphs/name/blocklytics/ethereum-blocks'
 };
 
+type Users = {
+    poolId: number, 
+    address: string, 
+    amount: bigint, 
+    rewardDebt: bigint, 
+    sushiHarvested: bigint
+}[];
+
 export default {
 	pageResults,
     graphAPIEndpoints,
@@ -68,34 +76,57 @@ export default {
             .catch((err, results) => console.log(err, results));
     },
     
-    users(block_number: number) {
-        return pageResults({
-            api: graphAPIEndpoints.masterchef,
-            query: {
-                entity: 'users',
-                selection: {
-                    orderBy: 'block',
-                    orderDirection: 'asc',
-                    block: {number: block_number}
+    async users(block_number: number) {
+        let start_block = 0;
+        let end_block = block_number;
+        let result: Users = [];
+
+        const cutoffs = [11789337];
+        for(let i = cutoffs.length-1; i >= 0; i--) {
+            if(end_block > cutoffs[i]) {
+                end_block = cutoffs[i]
+                result = [...result, ...await fetch(start_block, end_block)]
+                start_block = end_block;
+            }
+        }
+
+        result = [...result, ...await fetch(start_block, block_number)]
+
+        return result;
+
+        async function fetch(start_block, end_block) {
+            return pageResults({
+                api: graphAPIEndpoints.masterchef,
+                query: {
+                    entity: 'users',
+                    selection: {
+                        orderBy: 'block',
+                        orderDirection: 'asc',
+                        block: {number: block_number},
+                        where: {
+                            block_gt: start_block ? start_block : undefined,
+                            block_lte: end_block
+                        }
+                    },
+                    properties: [
+                    'id',
+                    'address',
+                    'amount',
+                    'rewardDebt',
+                    'sushiHarvested',
+                    ],
                 },
-                properties: [
-                'id',
-                'address',
-                'amount',
-                'rewardDebt',
-                'sushiHarvested',
-                ],
-            },
-        })
-            .then(results =>
-                results.map(({ id, address, amount, rewardDebt, sushiHarvested }) => ({
-                    id: String(id),
-                    address: String(address),
-                    amount: BigInt(amount),
-                    rewardDebt: BigInt(rewardDebt),
-                    sushiHarvested: BigInt(Math.floor(sushiHarvested * 1e18)),
-                })),
-            )
-            .catch(err => console.log(err));
+            })
+                .then(results =>
+                    results.map(({ id, address, amount, rewardDebt, sushiHarvested }) => ({
+                        poolId: Number(id.split("-")[0]),
+                        address: String(address),
+                        amount: BigInt(amount),
+                        rewardDebt: BigInt(rewardDebt),
+                        sushiHarvested: BigInt(Math.floor(sushiHarvested * 1e18)),
+                    })),
+                )
+                .catch(err => console.log(err));
+        }
     },
 }

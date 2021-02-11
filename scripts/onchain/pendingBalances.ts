@@ -1,7 +1,7 @@
 const Web3 = require('web3');
 const fs = require('fs');
 
-let web3 = new Web3(process.env.NODE);
+let web3 = new Web3(/*process.env.NODE*/);
 
 const masterchefAddress = "0xc2EdaD668740f1aA35E4D8f227fB8E17dcA888Cd";
 const sushiToken = "0x6B3595068778DD592e39A122f4f5a5cF09C90fE2";

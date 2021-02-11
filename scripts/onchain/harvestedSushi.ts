@@ -2,7 +2,7 @@ const Web3 = require('web3');
 const fs = require('fs');
 var _ = require('lodash');
 
-let web3 = new Web3(process.env.NODE);
+let web3 = new Web3(/*process.env.NODE*/);
 
 const sushiToken = "0x6B3595068778DD592e39A122f4f5a5cF09C90fE2";
 
